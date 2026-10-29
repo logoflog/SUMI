@@ -18,8 +18,6 @@ SUMI-main/
 │   ├── SourceA/                     # Example images from the first source
 │   └── SourceB/                     # Corresponding example images from the second source
 ├── output/                          # Example fused images
-├── workflow.png                     # Earlier architecture figure (CDNet labeling)
-├── movitation.png                   # Earlier motivation figure
 └── Random-Training-Images-Generation/
     ├── Generate.py                  # Auxiliary random-image generation script
     └── README.md
@@ -69,7 +67,7 @@ input/SourceA/1.tif  +  input/SourceB/1.tif
 ...
 ```
 
-Illustrative fused images are included in `output/`. Because this archive has no batch inference script or weights, the prior commands based on `python infer.py` do not apply to this release.
+Illustrative fused images are included in `output/`.
 
 ## Environment
 
@@ -93,17 +91,6 @@ Use a PyTorch installation compatible with your hardware and CUDA driver. The mi
 `Random-Training-Images-Generation/Generate.py` creates random-noise images and splits them into two complementary sources using irregular masks with partial intensity preservation. This supports the random-input analysis described in the manuscript.
 
 **Path note:** The existing generator writes to hard-coded Windows paths under `F:\\dataset\\Random\\SourceA` and `F:\\dataset\\Random\\SourceB`. Those paths must exist or be adjusted for a different machine before running the script. The script is included unchanged.
-
-## Figures
-
-The archive retains the original image assets:
-
-- `workflow.png` illustrates the model structure, but its annotations still use the former name **CDNet** and earlier module terminology.
-- `movitation.png` is a historical motivation figure and includes experimental labels from an earlier manuscript version. It should not be treated as the latest paper's results table.
-
-For current method terminology, experimental protocols, and reported results, refer to the SUMI manuscript.
-
-![Architecture figure retained from the earlier code release](workflow.png)
 
 ## Dataset links from the previous README
 
