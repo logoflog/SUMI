@@ -18,12 +18,19 @@ SUMI-main/
 │   ├── SourceA/                     # Example images from the first source
 │   └── SourceB/                     # Corresponding example images from the second source
 ├── output/                          # Example fused images
+├── workflow.png                     # SUMI architecture diagram
 └── Random-Training-Images-Generation/
     ├── Generate.py                  # Auxiliary random-image generation script
     └── README.md
 ```
 
 **Release scope:** This archive contains the neural network definition and example images. It does **not** contain a pretrained checkpoint, a batch inference entry point (`infer.py`), or the complete training and image-preprocessing pipeline. In particular, the color-space conversion and chrominance reconstruction described in the paper are **not** implemented in `CDNet.py` itself. The example images in `output/` are provided for reference; they are not produced automatically by running this archive.
+
+## Architecture
+
+The overall SUMI architecture is illustrated below.
+
+![SUMI workflow](workflow.png)
 
 ## Model implementation
 
