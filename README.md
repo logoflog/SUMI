@@ -1,154 +1,117 @@
-# CDNet Dual-Source Image Fusion
+# SUMI: Synchronous Unfolding for Multi-Source Image Fusion
 
-CDNet is a batch image fusion project for dual-source inputs. The current version keeps a direct two-source inference workflow: it reads paired images from `input/SourceA` and `input/SourceB`, loads CDNet weights from `model/latest.pth`, and saves fused images to `output`.
+This repository contains the **model definition and sample images** associated with **SUMI**, a lightweight framework for multi-source image fusion based on coupled convolutional sparse coding and synchronous block-sparse unfolding.
 
-## Usage
+**Manuscript:** *Synchronous Block-Sparse Unfolding of Coupled Convolutional Sparse Coding for Lightweight Multi-Modal Image Fusion*.
 
-Run the following command from the project root:
+SUMI is evaluated in the manuscript on multi-exposure, infrared-visible, and medical image fusion. Its design combines source-specific and common representations in a structured unfolding process. The manuscript also introduces a gradient-adaptive structural and luminance fidelity (GSLF) loss for unsupervised training.
 
-```bash
-python infer.py --input input --output output
+> **Naming note:** `CDNet.py` and the `CDNet` Python class retain their original names for compatibility with existing code and checkpoints. **SUMI** is the name used for the current method and manuscript. No model code has been renamed in this repository.
+
+## Repository contents
+
+```text
+SUMI-main/
+├── CDNet.py                         # SUMI model implementation (legacy filename/class name)
+├── README.md
+├── input/
+│   ├── SourceA/                     # Example images from the first source
+│   └── SourceB/                     # Corresponding example images from the second source
+├── output/                          # Example fused images
+├── workflow.png                     # Earlier architecture figure (CDNet labeling)
+├── movitation.png                   # Earlier motivation figure
+└── Random-Training-Images-Generation/
+    ├── Generate.py                  # Auxiliary random-image generation script
+    └── README.md
 ```
 
-Optional GPU inference:
+**Release scope:** This archive contains the neural network definition and example images. It does **not** contain a pretrained checkpoint, a batch inference entry point (`infer.py`), or the complete training and image-preprocessing pipeline. In particular, the color-space conversion and chrominance reconstruction described in the paper are **not** implemented in `CDNet.py` itself. The example images in `output/` are provided for reference; they are not produced automatically by running this archive.
 
-```bash
-python infer.py --input input --output output --device cuda
-```
+## Model implementation
 
-For large images, adjust the tile size:
+The implementation is in `CDNet.py` and exposes three classes:
 
-```bash
-python infer.py --input input --output output --tile-size 512
-```
-
-## Dataset
-
-The dataset can be downloaded from the following drives. The links below are placeholders and should be replaced with the actual share links before release.
-
-| Source | Link |
+| Class | Role |
 | --- | --- |
-| Google Drive | [https://drive.google.com/file/d/1Hc5OzWD1-7qKylZN-9UajkXgS0tu9NOL/view?usp=drive_link](https://drive.google.com/file/d/1Hc5OzWD1-7qKylZN-9UajkXgS0tu9NOL/view?usp=drive_link) |
-| Quark Drive | [https://pan.quark.cn/s/58593be7114c](https://pan.quark.cn/s/58593be7114c) |
+| `Decompose` | Iterative, soft-thresholding-based decomposition with structured convolutional operations. |
+| `Fuse` | Lightweight feature fusion and reconstruction using 1 × 1 convolutions. |
+| `CDNet` | Two-input fusion network; the class name is retained from the earlier implementation. |
 
-After downloading, organize the images into two input sources:
+The model operates on **single-channel tensors** in `BHWC` format (`batch × height × width × channel`) with values in `[0, 1]`. Its output has the same layout and a single channel. In the paper's full image-fusion workflow, the network operates on luminance; color processing is handled outside this model file.
 
-```text
-input
-├─ SourceA
-│  ├─ <name_1>.<ext>
-│  ├─ <name_2>.<ext>
-│  └─ ...
-└─ SourceB
-   ├─ <name_1>.<ext>
-   ├─ <name_2>.<ext>
-   └─ ...
+### Minimal forward-pass example
+
+Run from the repository root after installing PyTorch:
+
+```python
+import torch
+from CDNet import CDNet  # Original class name retained
+
+model = CDNet().eval()
+source_a = torch.rand(1, 128, 128, 1)
+source_b = torch.rand(1, 128, 128, 1)
+
+with torch.no_grad():
+    fused = model(source_a, source_b)
+
+print(fused.shape)  # torch.Size([1, 128, 128, 1])
 ```
 
-Images in `SourceA` and `SourceB` are paired by file stem. For example, `<name_1>.jpg` and `<name_1>.png` are treated as one input pair. Supported extensions are `.jpg`, `.jpeg`, `.png`, `.bmp`, `.tif`, and `.tiff`.
+This example verifies the **model interface only**. The model starts with randomly initialized parameters; meaningful fusion results require a compatible trained checkpoint and the appropriate inference preprocessing/postprocessing, neither of which is provided in this archive.
 
-## Environment Versions
+## Sample input and output
 
-```text
-Python          3.10.20
-PyTorch         2.10.0+cu130
-TorchVision     0.25.0+cu130
-CUDA Toolkit    13.0.2
-OpenCV Python   5.0.0.93
-NumPy           2.2.6
-Pillow          12.3.0
-scikit-image    0.25.2
-SciPy           1.15.3
-Matplotlib      3.10.9
-einops          0.8.2
-kornia          0.8.2
-timm            1.0.28
-```
-
-## Project Structure
+The repository includes example source pairs with matching filenames:
 
 ```text
-CDNet
-├─ CDNet.py
-├─ infer.py
-├─ model
-│  └─ latest.pth
-├─ input
-│  ├─ SourceA
-│  └─ SourceB
-├─ output
-├─ movitation.png
-├─ workflow.png
-└─ Random-Training-Images-Generation
+input/SourceA/0.tif  +  input/SourceB/0.tif
+input/SourceA/1.tif  +  input/SourceB/1.tif
+...
 ```
 
-| Path | Description |
+Illustrative fused images are included in `output/`. Because this archive has no batch inference script or weights, the prior commands based on `python infer.py` do not apply to this release.
+
+## Environment
+
+The main model file requires **Python and PyTorch**. The auxiliary random-image generator additionally uses **NumPy, OpenCV, and SciPy**.
+
+The following environment versions were recorded in the previous project README (they are reference versions, not verified minimum requirements):
+
+| Package | Recorded version |
 | --- | --- |
-| `CDNet.py` | Main CDNet model definition, including `Decompose`, `Fuse`, and `CDNet`. |
-| `infer.py` | Inference entry point for batch dual-source image fusion. |
-| `model/latest.pth` | Default model weight file. |
-| `input/SourceA` | First source image directory. |
-| `input/SourceB` | Second source image directory. |
-| `output` | Directory for fused output images. |
-| `movitation.png` | Motivation figure. |
-| `workflow.png` | CDNet workflow figure. |
-| `Random-Training-Images-Generation` | Auxiliary directory for random training image generation, used to build random noise and complementary source images. |
+| Python | 3.10.20 |
+| PyTorch | 2.10.0+cu130 |
+| CUDA Toolkit | 13.0.2 |
+| NumPy | 2.2.6 |
+| OpenCV Python | 5.0.0.93 |
+| SciPy | 1.15.3 |
 
-## Input and Output
+Use a PyTorch installation compatible with your hardware and CUDA driver. The minimal forward-pass example can also be run on CPU.
 
-Input requirements:
+## Auxiliary random-image generation
 
-- `input/SourceA` and `input/SourceB` must both exist.
-- Images are paired automatically by matching file stem.
-- If the two source images have different sizes, `SourceB` is resized to match `SourceA`.
-- Files that cannot be paired across the two source directories are skipped, and a warning is printed in the terminal.
+`Random-Training-Images-Generation/Generate.py` creates random-noise images and splits them into two complementary sources using irregular masks with partial intensity preservation. This supports the random-input analysis described in the manuscript.
 
-Output rule:
+**Path note:** The existing generator writes to hard-coded Windows paths under `F:\\dataset\\Random\\SourceA` and `F:\\dataset\\Random\\SourceB`. Those paths must exist or be adjusted for a different machine before running the script. The script is included unchanged.
 
-```text
-input/SourceA/<name>.* + input/SourceB/<name>.* -> output/<name>.png
-```
+## Figures
 
-The default output suffix is `.png`. It can be changed with `--output-suffix`.
+The archive retains the original image assets:
 
-## Workflow
+- `workflow.png` illustrates the model structure, but its annotations still use the former name **CDNet** and earlier module terminology.
+- `movitation.png` is a historical motivation figure and includes experimental labels from an earlier manuscript version. It should not be treated as the latest paper's results table.
 
-`workflow.png` shows the overall CDNet pipeline.
+For current method terminology, experimental protocols, and reported results, refer to the SUMI manuscript.
 
-![Workflow](workflow.png)
+![Architecture figure retained from the earlier code release](workflow.png)
 
-The current inference workflow is:
+## Dataset links from the previous README
 
-```text
-SourceA / SourceB
--> BGR loading
--> YCbCr conversion
--> CDNet fusion on the Y channel
--> Weighted fusion for Cb/Cr channels
--> Save fused BGR image
-```
+The following resource links were present in the earlier README. Their availability, contents, and redistribution permissions have **not** been verified as part of this documentation update:
 
-Main modules in `CDNet.py`:
+- [Google Drive](https://drive.google.com/file/d/1Hc5OzWD1-7qKylZN-9UajkXgS0tu9NOL/view?usp=drive_link)
+- [Quark Drive](https://pan.quark.cn/s/58593be7114c)
 
-- `Decompose`: a combined dictionary decomposition module that iteratively updates decomposition representations through stacked CDBlocks.
-- `Fuse`: a lightweight fusion module that combines decomposed and joint representations with 1x1 convolutions.
-- `CDNet`: the complete dual-input fusion model.
+## Citation
 
-## Motivation
-
-`movitation.png` illustrates the motivation of the method: simple global weighted fusion can be a strong baseline, but fixed weights cannot adapt to spatially varying content or source-specific contributions. CDNet uses a lightweight, content-adaptive fusion strategy.
-
-![Motivation](movitation.png)
-
-## Arguments
-
-| Argument | Default | Description |
-| --- | --- | --- |
-| `--input` | `input` | Input root directory containing `SourceA` and `SourceB`. |
-| `--output` | `output` | Output directory for fused images. |
-| `--weights` | `model/latest.pth` | Path to the CDNet weight file. |
-| `--source-a` | `SourceA` | Folder name of the first source under `--input`. |
-| `--source-b` | `SourceB` | Folder name of the second source under `--input`. |
-| `--output-suffix` | `.png` | Output image suffix. |
-| `--device` | `cpu` | Inference device, either `cpu` or `cuda`. |
-| `--tile-size` | `512` | Tile size for memory-friendly inference on large images. |
+If you use this repository in academic work, please cite the corresponding **SUMI** manuscript once its bibliographic information is available. No publication DOI is claimed in this repository.
